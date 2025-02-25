@@ -1,4 +1,14 @@
+# streamlit
+# torch
+# transformers
+# openai-whisper
+
 streamlit
+pyaudio
+openai-whisper
 torch
 transformers
-openai-whisper
+audiorecorder
+numpy
+soundfile
+ffmpeg-python
