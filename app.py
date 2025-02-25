@@ -167,8 +167,8 @@ if uploaded_file:
     with st.spinner("Transcribing... ⏳"):
         transcription = transcribe_audio(audio_path)
     
-    st.markdown(f"<div style='background: #ecf0f1; padding: 10px; border-radius: 10px;'>
-                <p style='font-size:16px; text-align:center;'>{transcription}</p></div>", 
+    st.markdown(f'''<div style='background: #ecf0f1; padding: 10px; border-radius: 10px;'>
+                <p style='font-size:16px; text-align:center;'>{transcription}</p></div>''', 
                 unsafe_allow_html=True)
     
     # Sentiment Analysis
