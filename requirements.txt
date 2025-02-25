@@ -1,7 +1,6 @@
 streamlit
+whisper
 torch
-torchaudio
 transformers
-openai-whisper
-speechrecognition
-pydub
+audiorecorder
+numpy

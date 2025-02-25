@@ -1,66 +1,91 @@
-import asyncio
-import torch
 import streamlit as st
+import whisper
+import torch
+import os
+import tempfile
 from transformers import pipeline
-import speech_recognition as sr
-from pydub import AudioSegment
+from audiorecorder import audiorecorder
+import base64
 
-# Ensure an event loop is running
-try:
-    asyncio.get_running_loop()
-except RuntimeError:
-    asyncio.run(asyncio.sleep(0))
+# Page Config
+st.set_page_config(page_title="Audio Transcription & Sentiment Analysis", page_icon="🎤", layout="wide")
 
-# Streamlit page configuration (must be first Streamlit command)
-st.set_page_config(page_title="Audio Transcription & Sentiment Analysis", layout="centered")
+# Load Whisper model
+@st.cache_resource
+def load_whisper():
+    return whisper.load_model("base")
 
-# Title and description
-st.title("🎤 Audio Transcription & Sentiment Analysis")
-st.markdown("Upload or record an audio file and get its **transcription and sentiment analysis**.")
+whisper_model = load_whisper()
 
-# Initialize the sentiment analysis pipeline
-sentiment_pipeline = pipeline("sentiment-analysis")
+# Load Sentiment Analysis Model
+@st.cache_resource
+def load_sentiment_model():
+    return pipeline("sentiment-analysis", model="distilbert/distilbert-base-uncased-finetuned-sst-2-english")
+
+sentiment_model = load_sentiment_model()
 
 # Function to transcribe audio
-def transcribe_audio(audio_path):
-    recognizer = sr.Recognizer()
-    audio = AudioSegment.from_file(audio_path)
-    audio.export("temp.wav", format="wav")  # Convert to WAV format
+def transcribe_audio(file_path):
+    try:
+        result = whisper_model.transcribe(file_path)
+        return result["text"]
+    except Exception as e:
+        return f"Error in transcription: {str(e)}"
 
-    with sr.AudioFile("temp.wav") as source:
-        audio_data = recognizer.record(source)
-        try:
-            text = recognizer.recognize_google(audio_data)
-            return text
-        except sr.UnknownValueError:
-            return "Could not understand the audio"
-        except sr.RequestError:
-            return "Error with the speech recognition service"
-
-# Function to analyze sentiment
+# Function to perform sentiment analysis
 def analyze_sentiment(text):
-    sentiment = sentiment_pipeline(text)
-    return sentiment[0]  # Returns a dictionary with 'label' and 'score'
+    result = sentiment_model(text)[0]
+    return result["label"], result["score"]
 
-# File uploader
-uploaded_file = st.file_uploader("Upload an audio file", type=["wav", "mp3", "ogg"])
+# Function to show audio player
+def show_audio_player(file_path):
+    with open(file_path, "rb") as audio_file:
+        audio_bytes = audio_file.read()
+    st.audio(audio_bytes)
 
-if uploaded_file is not None:
-    st.audio(uploaded_file, format="audio/wav")
+# UI Layout
+st.markdown("<h1 style='text-align: center;'>🎤 Audio Transcription & Sentiment Analysis</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>Upload or record an audio file and get its transcription and sentiment analysis.</p>", unsafe_allow_html=True)
 
-    # Save uploaded file
-    file_path = f"temp_{uploaded_file.name}"
-    with open(file_path, "wb") as f:
-        f.write(uploaded_file.read())
+# Upload or Record Audio
+st.markdown("### Upload or Record an Audio File:")
+col1, col2 = st.columns(2)
 
-    # Transcribe audio
-    transcription = transcribe_audio(file_path)
-    st.subheader("Transcription:")
+with col1:
+    uploaded_file = st.file_uploader("Upload an audio file", type=["wav", "mp3", "ogg", "m4a"])
+    
+with col2:
+    recorded_audio = audiorecorder("🎙️ Click to Record", "Stop Recording")
+
+if uploaded_file or recorded_audio:
+    st.markdown("### 🎧 Audio Playback")
+    
+    # Save Uploaded or Recorded File
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
+        if uploaded_file:
+            temp_audio.write(uploaded_file.read())
+            audio_path = temp_audio.name
+        else:
+            temp_audio.write(recorded_audio.tobytes())
+            audio_path = temp_audio.name
+
+    show_audio_player(audio_path)
+
+    # Transcription
+    st.markdown("### 📝 Transcription")
+    with st.spinner("Transcribing... ⏳"):
+        transcription = transcribe_audio(audio_path)
+    
     st.write(transcription)
 
-    # Sentiment analysis
-    if transcription and transcription != "Could not understand the audio":
-        sentiment_result = analyze_sentiment(transcription)
-        st.subheader("Sentiment Analysis:")
-        st.write(f"**Sentiment:** {sentiment_result['label']}")
-        st.write(f"**Confidence Score:** {sentiment_result['score']:.2f}")
+    # Sentiment Analysis
+    if transcription.strip():
+        st.markdown("### 📊 Sentiment Analysis")
+        with st.spinner("Analyzing sentiment..."):
+            sentiment, confidence = analyze_sentiment(transcription)
+
+        st.write(f"**Sentiment:** {sentiment}")
+        st.write(f"**Confidence Score:** {round(confidence, 2)}")
+
+    # Cleanup temp files
+    os.unlink(audio_path)
