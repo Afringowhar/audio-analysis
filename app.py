@@ -96,7 +96,7 @@ st.set_page_config(page_title="Audio Transcription & Sentiment Analysis", page_i
 st.markdown("""
     <style>
         .main {
-            background-color: #f8f9fa;
+            background-color: #000957;
         }
         h1, h2, h3 {
             color: #2c3e50;
@@ -168,7 +168,7 @@ if uploaded_file:
         transcription = transcribe_audio(audio_path)
     
     st.markdown(f"""
-            <div style='background: #ecf0f1; padding: 10px; border-radius: 10px;'>
+            <div style='background: #FFB200; padding: 10px; border-radius: 10px;'>
                 <p style='font-size:16px; text-align:center;'>{transcription}</p></div>""", 
                 unsafe_allow_html=True)
     
@@ -178,7 +178,7 @@ if uploaded_file:
         with st.spinner("Analyzing sentiment..."):
             sentiment, confidence = analyze_sentiment(transcription)
         
-        st.markdown(f"""<div style='background: #E3D2C3; padding: 10px; border-radius: 10px;'>
+        st.markdown(f"""<div style='background: #FFB200; padding: 10px; border-radius: 10px;'>
                     <h3 style='text-align:center;'>Sentiment: {sentiment}</h3>
                     <p style='text-align:center; font-size:16px;'>Confidence Score: {round(confidence, 2)}</p>
                     </div>""", 
