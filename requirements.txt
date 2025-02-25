@@ -3,3 +3,5 @@ torch
 torchaudio
 transformers
 openai-whisper
+speechrecognition
+pydub
