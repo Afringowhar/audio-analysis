@@ -1,70 +1,66 @@
-import streamlit as st
-import os
-import tempfile
-import whisper
 import asyncio
-import sys
+import torch
+import streamlit as st
 from transformers import pipeline
+import speech_recognition as sr
+from pydub import AudioSegment
 
-# Fix asyncio issue
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+# Ensure an event loop is running
+try:
+    asyncio.get_running_loop()
+except RuntimeError:
+    asyncio.run(asyncio.sleep(0))
 
-# Ensure `set_page_config` is the first Streamlit command
+# Streamlit page configuration (must be first Streamlit command)
 st.set_page_config(page_title="Audio Transcription & Sentiment Analysis", layout="centered")
 
-# Load Whisper model
-@st.cache_resource
-def load_whisper_model():
-    return whisper.load_model("base")
+# Title and description
+st.title("🎤 Audio Transcription & Sentiment Analysis")
+st.markdown("Upload or record an audio file and get its **transcription and sentiment analysis**.")
 
-# Load sentiment analysis model
-@st.cache_resource
-def load_sentiment_model():
-    return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
+# Initialize the sentiment analysis pipeline
+sentiment_pipeline = pipeline("sentiment-analysis")
 
-whisper_model = load_whisper_model()
-sentiment_pipeline = load_sentiment_model()
-
+# Function to transcribe audio
 def transcribe_audio(audio_path):
-    """Transcribes an audio file using Whisper."""
-    result = whisper_model.transcribe(audio_path, fp16=False)
-    return result["text"]
+    recognizer = sr.Recognizer()
+    audio = AudioSegment.from_file(audio_path)
+    audio.export("temp.wav", format="wav")  # Convert to WAV format
 
+    with sr.AudioFile("temp.wav") as source:
+        audio_data = recognizer.record(source)
+        try:
+            text = recognizer.recognize_google(audio_data)
+            return text
+        except sr.UnknownValueError:
+            return "Could not understand the audio"
+        except sr.RequestError:
+            return "Error with the speech recognition service"
+
+# Function to analyze sentiment
 def analyze_sentiment(text):
-    """Analyzes sentiment of the transcribed text."""
     sentiment = sentiment_pipeline(text)
     return sentiment[0]  # Returns a dictionary with 'label' and 'score'
 
-# Streamlit UI
-st.title("🎤 Audio Transcription & Sentiment Analysis")
-st.markdown("Upload or record an audio file and get its **transcription** along with **sentiment analysis**.")
-
 # File uploader
-uploaded_file = st.file_uploader("Upload an audio file", type=["wav", "mp3", "m4a"])
+uploaded_file = st.file_uploader("Upload an audio file", type=["wav", "mp3", "ogg"])
 
-if uploaded_file:
-    # Save the file temporarily
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
-        temp_audio.write(uploaded_file.read())
-        audio_path = temp_audio.name
-    
-    # Transcribe and analyze sentiment
-    with st.spinner("Transcribing..."):
-        transcription = transcribe_audio(audio_path)
+if uploaded_file is not None:
+    st.audio(uploaded_file, format="audio/wav")
 
-    with st.spinner("Analyzing sentiment..."):
+    # Save uploaded file
+    file_path = f"temp_{uploaded_file.name}"
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.read())
+
+    # Transcribe audio
+    transcription = transcribe_audio(file_path)
+    st.subheader("Transcription:")
+    st.write(transcription)
+
+    # Sentiment analysis
+    if transcription and transcription != "Could not understand the audio":
         sentiment_result = analyze_sentiment(transcription)
-
-    # Display results
-    st.subheader("📜 Transcription:")
-    st.success(transcription)
-
-    st.subheader("📊 Sentiment Analysis:")
-    st.markdown(f"**Sentiment:** {sentiment_result['label']}  \n**Confidence Score:** {sentiment_result['score']:.2f}")
-
-    # Provide a download option for the transcription
-    st.download_button("⬇️ Download Transcription", transcription, file_name="transcription.txt", mime="text/plain")
-
-    # Cleanup temporary file
-    os.remove(audio_path)
+        st.subheader("Sentiment Analysis:")
+        st.write(f"**Sentiment:** {sentiment_result['label']}")
+        st.write(f"**Confidence Score:** {sentiment_result['score']:.2f}")
