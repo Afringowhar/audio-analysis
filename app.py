@@ -178,10 +178,10 @@ if uploaded_file:
         with st.spinner("Analyzing sentiment..."):
             sentiment, confidence = analyze_sentiment(transcription)
         
-        st.markdown(f"<div style='background: #dff9fb; padding: 10px; border-radius: 10px;'>
+        st.markdown(f"""<div style='background: #dff9fb; padding: 10px; border-radius: 10px;'>
                     <h3 style='text-align:center;'>Sentiment: {sentiment}</h3>
                     <p style='text-align:center; font-size:16px;'>Confidence Score: {round(confidence, 2)}</p>
-                    </div>", 
+                    </div>""", 
                     unsafe_allow_html=True)
     
     # Cleanup temp files
