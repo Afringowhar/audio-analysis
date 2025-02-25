@@ -4,7 +4,7 @@ import torch
 import os
 import tempfile
 from transformers import pipeline
-from audiorecorder import audiorecorder
+from streamlit_audio_recorder import st_audio_recorder
 import base64
 
 # Page Config

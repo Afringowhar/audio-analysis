@@ -3,7 +3,7 @@ pyaudio
 openai-whisper
 torch
 transformers
-audiorecorder
 numpy
 soundfile
 ffmpeg-python
+streamlit_audio_recorder
