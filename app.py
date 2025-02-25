@@ -96,7 +96,7 @@ st.set_page_config(page_title="Audio Transcription & Sentiment Analysis", page_i
 st.markdown("""
     <style>
         .main {
-            background-color: #000957;
+            background-color: #001A6E;
         }
         h1, h2, h3 {
             color: #2c3e50;
