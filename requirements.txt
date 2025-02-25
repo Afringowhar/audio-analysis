@@ -5,3 +5,4 @@ transformers
 audiorecorder
 numpy
 soundfile
+ffmpeg-python
