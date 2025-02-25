@@ -4,7 +4,6 @@ import torch
 import os
 import tempfile
 from transformers import pipeline
-from streamlit_audio_recorder import st_audio_recorder
 import base64
 
 # Page Config
@@ -45,29 +44,19 @@ def show_audio_player(file_path):
 
 # UI Layout
 st.markdown("<h1 style='text-align: center;'>🎤 Audio Transcription & Sentiment Analysis</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center;'>Upload or record an audio file and get its transcription and sentiment analysis.</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>Upload an audio file and get its transcription and sentiment analysis.</p>", unsafe_allow_html=True)
 
-# Upload or Record Audio
-st.markdown("### Upload or Record an Audio File:")
-col1, col2 = st.columns(2)
+# Upload Audio File
+st.markdown("### Upload an Audio File:")
+uploaded_file = st.file_uploader("Upload an audio file", type=["wav", "mp3", "ogg", "m4a"])
 
-with col1:
-    uploaded_file = st.file_uploader("Upload an audio file", type=["wav", "mp3", "ogg", "m4a"])
-    
-with col2:
-    recorded_audio = audiorecorder("🎙️ Click to Record", "Stop Recording")
-
-if uploaded_file or recorded_audio:
+if uploaded_file:
     st.markdown("### 🎧 Audio Playback")
     
-    # Save Uploaded or Recorded File
+    # Save Uploaded File
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
-        if uploaded_file:
-            temp_audio.write(uploaded_file.read())
-            audio_path = temp_audio.name
-        else:
-            temp_audio.write(recorded_audio.tobytes())
-            audio_path = temp_audio.name
+        temp_audio.write(uploaded_file.read())
+        audio_path = temp_audio.name
 
     show_audio_player(audio_path)
 

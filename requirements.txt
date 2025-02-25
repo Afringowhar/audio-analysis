@@ -1,9 +1,4 @@
 streamlit
-pyaudio
-openai-whisper
 torch
 transformers
-numpy
-soundfile
-ffmpeg-python
-streamlit_audio_recorder
+openai-whisper
