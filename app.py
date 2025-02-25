@@ -1,8 +1,17 @@
-import os
 import streamlit as st
+import os
 import tempfile
 import whisper
+import asyncio
+import sys
 from transformers import pipeline
+
+# Fix asyncio issue
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+# Ensure `set_page_config` is the first Streamlit command
+st.set_page_config(page_title="Audio Transcription & Sentiment Analysis", layout="centered")
 
 # Load Whisper model
 @st.cache_resource
@@ -28,26 +37,11 @@ def analyze_sentiment(text):
     return sentiment[0]  # Returns a dictionary with 'label' and 'score'
 
 # Streamlit UI
-st.set_page_config(page_title="Audio Transcription & Sentiment Analysis", layout="centered")
-
 st.title("🎤 Audio Transcription & Sentiment Analysis")
 st.markdown("Upload or record an audio file and get its **transcription** along with **sentiment analysis**.")
 
 # File uploader
 uploaded_file = st.file_uploader("Upload an audio file", type=["wav", "mp3", "m4a"])
-
-# Audio recorder using Streamlit's native widget
-if 'audio_recorder_state' not in st.session_state:
-    st.session_state.audio_recorder_state = None
-
-record_audio = st.button("🎙️ Start Recording")
-
-if record_audio:
-    st.session_state.audio_recorder_state = st.audio_recorder()
-
-if st.session_state.audio_recorder_state:
-    st.audio(st.session_state.audio_recorder_state, format="audio/wav")
-    uploaded_file = st.session_state.audio_recorder_state
 
 if uploaded_file:
     # Save the file temporarily
